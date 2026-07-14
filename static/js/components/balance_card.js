@@ -30,7 +30,13 @@ export function balanceCardsHtml(balance) {
             <span class="label">Pending requests</span>
           </div>
         </div>
-        <p style="margin-top:10px;">Allowance ${h.allowance_days} days for ${h.year} (Jan 1 &ndash; Dec 31).</p>
+        <p style="margin-top:10px;">
+          ${
+            h.prorated
+              ? `Pro-rated allowance: ${h.effective_allowance_days} days for ${h.year} (standard allowance is ${h.allowance_days} days/yr, adjusted for a mid-year start date).`
+              : `Allowance ${h.allowance_days} days for ${h.year} (Jan 1 &ndash; Dec 31).`
+          }
+        </p>
       </div>
       <div class="card">
         <h3>Sickness (rolling 12mo) ${sicknessBadge}</h3>

@@ -1,11 +1,26 @@
 from datetime import date
 
-from .dates import days_ago_iso
+from .dates import days_ago_iso, parse_date
 
 
 def get_org_settings(db):
     row = db.execute("SELECT * FROM org_settings WHERE id = 1").fetchone()
     return dict(row)
+
+
+def prorate_allowance(allowance, start_date_str, year):
+    """Pro-rates an annual allowance for employees who joined partway through
+    the given year: whole calendar months remaining (including the start
+    month itself if they joined on or before the 15th) / 12. Employees who
+    joined in an earlier year get the full allowance."""
+    start = parse_date(start_date_str)
+    if start.year != year:
+        return allowance
+    months_remaining = 13 - start.month
+    if start.day > 15:
+        months_remaining -= 1
+    months_remaining = max(0, months_remaining)
+    return round(allowance * months_remaining / 12, 1)
 
 
 def compute_holiday_balance(db, user):
@@ -26,12 +41,15 @@ def compute_holiday_balance(db, user):
     ).fetchone()["total"]
 
     allowance = user["holiday_allowance_days"]
-    remaining = allowance - approved_used
+    effective_allowance = prorate_allowance(allowance, user["start_date"], int(year))
+    remaining = effective_allowance - approved_used
     projected_remaining = remaining - pending_total
 
     return {
         "year": int(year),
         "allowance_days": allowance,
+        "effective_allowance_days": effective_allowance,
+        "prorated": effective_allowance != allowance,
         "approved_used_days": approved_used,
         "pending_days": pending_total,
         "remaining_days": remaining,

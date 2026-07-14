@@ -20,7 +20,7 @@ function employeeRowHtml(e) {
     <tr data-row="${e.id}">
       <td>${e.name}<br><span style="color:var(--text-muted); font-size:12px;">${e.email}</span></td>
       <td>${e.role}</td>
-      <td>${h.allowance_days} days/yr</td>
+      <td>${h.allowance_days} days/yr${h.prorated ? ` <span style="color:var(--text-muted); font-size:12px;">(pro-rated to ${h.effective_allowance_days})</span>` : ""}</td>
       <td>${h.remaining_days} left ${holidayBadge(e.balance)}</td>
       <td>${sicknessBadge(e.balance)}</td>
       <td><div class="actions-row">
