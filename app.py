@@ -7,6 +7,8 @@ from server.routes import auth_routes, employee_routes, leave_routes, calendar_r
 
 def create_app():
     app = Flask(__name__, static_folder=None)
+    backend = "Postgres" if config.USE_POSTGRES else f"SQLite ({config.DB_PATH})"
+    print(f"[leave-tracker] datastore backend: {backend}", flush=True)
     init_db(app)
     bootstrap_admin()
 
