@@ -4,18 +4,19 @@
   --border: #e2e5ea;
   --text: #1c2333;
   --text-muted: #6b7280;
-  --primary: #3457d5;
-  --primary-dark: #2a44ad;
+  --primary: #025b7f;
+  --primary-dark: #01415a;
   --danger: #d64545;
   --danger-bg: #fdecec;
   --warning: #b8860b;
   --warning-bg: #fff8e6;
   --success: #1f9d55;
   --success-bg: #eafaf0;
-  --holiday: #3457d5;
-  --sickness: #d6704a;
+  --holiday: #025b7f;
+  --sickness: #ff4848;
+  --brand-coral: #ff4848;
   --radius: 10px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-family: "Quicksand", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -53,7 +54,18 @@ p { margin: 0 0 8px; color: var(--text-muted); }
   border-bottom: 1px solid var(--border);
   padding: 12px 24px;
 }
-.navbar .brand { font-weight: 700; font-size: 16px; }
+.navbar .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; }
+.navbar .brand img { height: 26px; display: block; }
+.navbar .brand .portal-tag {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--text-muted);
+  border-left: 1px solid var(--border);
+  padding-left: 10px;
+}
+.login-wrap .brand-logo { display: block; height: 34px; margin: 0 auto 18px; }
 .navbar .links { display: flex; gap: 4px; align-items: center; }
 .navbar .links a, .navbar .links button {
   padding: 8px 12px;

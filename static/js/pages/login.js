@@ -4,8 +4,9 @@ import { setUser } from "../state.js";
 export function renderLogin(container) {
   container.innerHTML = `
     <div class="login-wrap card">
-      <h1>Leave Tracker</h1>
-      <p class="subtitle">Sign in to manage or view holiday &amp; sickness records.</p>
+      <img src="/img/logo.png" alt="SwiftDoctor" class="brand-logo" />
+      <h1 style="text-align:center;">Staff Portal</h1>
+      <p class="subtitle" style="text-align:center;">Sign in to manage or view holiday &amp; sickness records.</p>
       <div id="login-error"></div>
       <form id="login-form">
         <div class="form-row">

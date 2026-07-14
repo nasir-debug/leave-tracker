@@ -27,7 +27,10 @@ export function renderNav() {
 
   el.innerHTML = `
     <div class="navbar">
-      <div class="brand">Leave Tracker</div>
+      <div class="brand">
+        <img src="/img/logo.png" alt="SwiftDoctor" />
+        <span class="portal-tag">Staff Portal</span>
+      </div>
       <div class="links">
         ${links
           .map(
