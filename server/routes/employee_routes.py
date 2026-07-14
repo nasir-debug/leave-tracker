@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, g
 
-from ..db import get_db
+from ..db import get_db, insert_returning_id
 from ..auth import require_auth, require_role, hash_password
 from ..utils.balance import compute_full_balance
 from .auth_routes import serialize_user
@@ -92,7 +92,8 @@ def create_employee():
     if existing:
         return jsonify({"error": "A user with that email already exists"}), 409
 
-    cur = db.execute(
+    new_id = insert_returning_id(
+        db,
         """INSERT INTO users
            (name, email, password_hash, role, holiday_allowance_days, carry_over_days,
             sickness_alert_days, sickness_alert_occurrences, start_date, active)
@@ -110,7 +111,7 @@ def create_employee():
         ),
     )
     db.commit()
-    user = db.execute("SELECT * FROM users WHERE id = ?", (cur.lastrowid,)).fetchone()
+    user = db.execute("SELECT * FROM users WHERE id = ?", (new_id,)).fetchone()
     entry = serialize_user(user)
     entry["balance"] = compute_full_balance(db, user)
     return jsonify({"employee": entry}), 201

@@ -5,8 +5,15 @@ STATIC_DIR = os.path.join(BASE_DIR, "static")
 
 IS_PRODUCTION = os.environ.get("LEAVE_TRACKER_ENV") == "production"
 
-# On Render, set LEAVE_TRACKER_DB_PATH to a file under the persistent disk's
-# mount path (e.g. /var/data/tracker.db) so data survives deploys/restarts.
+# If DATABASE_URL is set (a Postgres connection string, e.g. from Neon/Supabase/
+# Render Postgres), that's used as the datastore. Otherwise falls back to a local
+# SQLite file, which is what local dev uses since this machine has no Postgres.
+DATABASE_URL = os.environ.get("DATABASE_URL")
+USE_POSTGRES = bool(DATABASE_URL)
+
+# Only relevant for the SQLite fallback. On Render's paid plans with a persistent
+# disk, set LEAVE_TRACKER_DB_PATH to a file under the disk's mount path so data
+# survives deploys/restarts.
 DB_PATH = os.environ.get("LEAVE_TRACKER_DB_PATH", os.path.join(BASE_DIR, "data", "tracker.db"))
 
 JWT_SECRET = os.environ.get("LEAVE_TRACKER_JWT_SECRET")

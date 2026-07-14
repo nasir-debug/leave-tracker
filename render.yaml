@@ -2,10 +2,10 @@ services:
   - type: web
     name: leave-tracker
     runtime: python
-    plan: starter
+    plan: free
     region: oregon
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app --preload --bind 0.0.0.0:$PORT --workers 2 --threads 4
+    startCommand: gunicorn app:app --preload --bind 0.0.0.0:$PORT --workers 1 --threads 4
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
@@ -13,15 +13,14 @@ services:
         value: production
       - key: LEAVE_TRACKER_JWT_SECRET
         generateValue: true
-      - key: LEAVE_TRACKER_DB_PATH
-        value: /var/data/tracker.db
+      # Paste your Neon (or other Postgres) connection string here. Required —
+      # the free plan has no persistent disk, so without this the SQLite
+      # fallback would lose all data on every restart/redeploy.
+      - key: DATABASE_URL
+        sync: false
       # Set these two to create the first admin login on first deploy.
       # You can remove them from the Render dashboard after first login.
       - key: LEAVE_TRACKER_ADMIN_EMAIL
         sync: false
       - key: LEAVE_TRACKER_ADMIN_PASSWORD
         sync: false
-    disk:
-      name: leave-tracker-data
-      mountPath: /var/data
-      sizeGB: 1

@@ -2,7 +2,7 @@ from datetime import datetime
 
 from flask import Blueprint, request, jsonify, g
 
-from ..db import get_db
+from ..db import get_db, insert_returning_id
 from ..auth import require_auth, require_role
 from ..utils.dates import count_business_days, parse_date
 from ..utils.balance import compute_holiday_balance
@@ -103,10 +103,11 @@ def create_leave():
     decided_fields = ""
     decided_values = []
     if status == "approved":
-        decided_fields = ", decided_by = ?, decided_at = ?"
+        decided_fields = ", decided_by, decided_at"
         decided_values = [g.current_user["id"], datetime.utcnow().isoformat()]
 
-    cur = db.execute(
+    new_id = insert_returning_id(
+        db,
         f"""INSERT INTO leave_requests
             (user_id, type, start_date, end_date, days, status, notes{decided_fields})
             VALUES (?, ?, ?, ?, ?, ?, ?{',?' * len(decided_values)})""",
@@ -117,7 +118,7 @@ def create_leave():
     row = db.execute(
         """SELECT lr.*, u.name AS user_name FROM leave_requests lr
            JOIN users u ON u.id = lr.user_id WHERE lr.id = ?""",
-        (cur.lastrowid,),
+        (new_id,),
     ).fetchone()
 
     result = serialize_leave(row)

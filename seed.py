@@ -6,7 +6,7 @@ exists (matched by email).
 
 from datetime import date, timedelta
 
-from server.db import init_db, get_db
+from server.db import init_db, get_db, insert_returning_id
 from server.auth import hash_password
 from app import app
 
@@ -16,7 +16,8 @@ def upsert_user(db, name, email, password, role, allowance, carry_over, start_da
     existing = db.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
     if existing:
         return existing["id"]
-    cur = db.execute(
+    new_id = insert_returning_id(
+        db,
         """INSERT INTO users
            (name, email, password_hash, role, holiday_allowance_days, carry_over_days,
             sickness_alert_days, sickness_alert_occurrences, start_date, active)
@@ -25,7 +26,7 @@ def upsert_user(db, name, email, password, role, allowance, carry_over, start_da
          sickness_alert_days, sickness_alert_occurrences, start_date),
     )
     db.commit()
-    return cur.lastrowid
+    return new_id
 
 
 def add_leave(db, user_id, leave_type, start, end, days, status, notes=None):
