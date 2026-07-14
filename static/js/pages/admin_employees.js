@@ -23,10 +23,10 @@ function employeeRowHtml(e) {
       <td>${h.allowance_days} / ${h.carry_over_days} carry</td>
       <td>${h.remaining_days} left ${holidayBadge(e.balance)}</td>
       <td>${sicknessBadge(e.balance)}</td>
-      <td class="actions-row">
+      <td><div class="actions-row">
         <button class="btn secondary small" data-edit="${e.id}">Edit</button>
         <button class="btn danger small" data-deactivate="${e.id}">Deactivate</button>
-      </td>
+      </div></td>
     </tr>
     <tr class="edit-row" id="edit-row-${e.id}" style="display:none;"><td colspan="6"></td></tr>
   `;

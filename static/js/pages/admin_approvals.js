@@ -34,10 +34,10 @@ async function loadPending(container) {
             <td>${l.start_date} &rarr; ${l.end_date}</td>
             <td>${l.days}</td>
             <td>${l.notes || ""}</td>
-            <td class="actions-row">
+            <td><div class="actions-row">
               <button class="btn small" data-approve="${l.id}">Approve</button>
               <button class="btn danger small" data-reject="${l.id}">Reject</button>
-            </td>
+            </div></td>
           </tr>`
           )
           .join("")}
