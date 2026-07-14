@@ -35,6 +35,7 @@ export function renderNav() {
               `<a href="${l.href}" class="${route === l.href.slice(1) ? "active" : ""}">${l.label}</a>`
           )
           .join("")}
+        <a href="#/account" class="${route === "/account" ? "active" : ""}">Account</a>
         <span class="user">${user.name} (${user.role})</span>
         <button id="logout-btn">Log out</button>
       </div>

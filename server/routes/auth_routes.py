@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, g
 
 from ..db import get_db
-from ..auth import verify_password, create_token, require_auth
+from ..auth import verify_password, hash_password, create_token, require_auth
 
 bp = Blueprint("auth_routes", __name__, url_prefix="/api/auth")
 
@@ -42,3 +42,26 @@ def login():
 @require_auth
 def me():
     return jsonify({"user": serialize_user(g.current_user)})
+
+
+@bp.patch("/password")
+@require_auth
+def change_password():
+    data = request.get_json(silent=True) or {}
+    current_password = data.get("current_password") or ""
+    new_password = data.get("new_password") or ""
+
+    if not current_password or not new_password:
+        return jsonify({"error": "current_password and new_password are required"}), 400
+    if len(new_password) < 8:
+        return jsonify({"error": "new password must be at least 8 characters"}), 400
+    if not verify_password(current_password, g.current_user["password_hash"]):
+        return jsonify({"error": "current password is incorrect"}), 401
+
+    db = get_db()
+    db.execute(
+        "UPDATE users SET password_hash = ? WHERE id = ?",
+        (hash_password(new_password), g.current_user["id"]),
+    )
+    db.commit()
+    return jsonify({"ok": True})

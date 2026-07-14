@@ -39,6 +39,8 @@ async function request(method, path, body) {
 export const api = {
   login: (email, password) => request("POST", "/api/auth/login", { email, password }),
   me: () => request("GET", "/api/auth/me"),
+  changePassword: (currentPassword, newPassword) =>
+    request("PATCH", "/api/auth/password", { current_password: currentPassword, new_password: newPassword }),
 
   listEmployees: () => request("GET", "/api/employees"),
   getEmployee: (id) => request("GET", `/api/employees/${id}`),

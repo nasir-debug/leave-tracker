@@ -7,6 +7,7 @@ import { renderCalendarPage } from "./pages/calendar.js";
 import { renderAdminEmployees } from "./pages/admin_employees.js";
 import { renderAdminApprovals } from "./pages/admin_approvals.js";
 import { renderAdminSettings } from "./pages/admin_settings.js";
+import { renderAccount } from "./pages/account.js";
 
 const appEl = document.getElementById("app");
 
@@ -44,6 +45,7 @@ async function route() {
     else if (path === "/admin/employees") await renderAdminEmployees(appEl);
     else if (path === "/admin/approvals") await renderAdminApprovals(appEl);
     else if (path === "/admin/settings") await renderAdminSettings(appEl);
+    else if (path === "/account") await renderAccount(appEl);
     else {
       location.hash = "#/dashboard";
     }
