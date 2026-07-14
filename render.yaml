@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: leave-tracker
+    runtime: python
+    plan: starter
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --threads 4
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: LEAVE_TRACKER_ENV
+        value: production
+      - key: LEAVE_TRACKER_JWT_SECRET
+        generateValue: true
+      - key: LEAVE_TRACKER_DB_PATH
+        value: /var/data/tracker.db
+      # Set these two to create the first admin login on first deploy.
+      # You can remove them from the Render dashboard after first login.
+      - key: LEAVE_TRACKER_ADMIN_EMAIL
+        sync: false
+      - key: LEAVE_TRACKER_ADMIN_PASSWORD
+        sync: false
+    disk:
+      name: leave-tracker-data
+      mountPath: /var/data
+      sizeGB: 1
