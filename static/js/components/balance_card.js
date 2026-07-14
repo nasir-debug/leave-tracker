@@ -30,7 +30,7 @@ export function balanceCardsHtml(balance) {
             <span class="label">Pending requests</span>
           </div>
         </div>
-        <p style="margin-top:10px;">Allowance ${h.allowance_days} + carry-over ${h.carry_over_days} days.</p>
+        <p style="margin-top:10px;">Allowance ${h.allowance_days} days for ${h.year} (Jan 1 &ndash; Dec 31).</p>
       </div>
       <div class="card">
         <h3>Sickness (rolling 12mo) ${sicknessBadge}</h3>

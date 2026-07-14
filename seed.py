@@ -11,7 +11,7 @@ from server.auth import hash_password
 from app import app
 
 
-def upsert_user(db, name, email, password, role, allowance, carry_over, start_date,
+def upsert_user(db, name, email, password, role, allowance, start_date,
                  sickness_alert_days=None, sickness_alert_occurrences=None):
     existing = db.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
     if existing:
@@ -19,10 +19,10 @@ def upsert_user(db, name, email, password, role, allowance, carry_over, start_da
     new_id = insert_returning_id(
         db,
         """INSERT INTO users
-           (name, email, password_hash, role, holiday_allowance_days, carry_over_days,
+           (name, email, password_hash, role, holiday_allowance_days,
             sickness_alert_days, sickness_alert_occurrences, start_date, active)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)""",
-        (name, email, hash_password(password), role, allowance, carry_over,
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)""",
+        (name, email, hash_password(password), role, allowance,
          sickness_alert_days, sickness_alert_occurrences, start_date),
     )
     db.commit()
@@ -53,19 +53,19 @@ def run():
 
         admin_id = upsert_user(
             db, "Alex Admin", "admin@example.com", "admin123",
-            "admin", 25, 0, "2020-01-01",
+            "admin", 25, "2020-01-01",
         )
         jamie_id = upsert_user(
             db, "Jamie Chen", "jamie@example.com", "password123",
-            "employee", 25, 3, "2022-03-01",
+            "employee", 25, "2022-03-01",
         )
         priya_id = upsert_user(
             db, "Priya Patel", "priya@example.com", "password123",
-            "employee", 20, 0, "2023-06-15",
+            "employee", 20, "2023-06-15",
         )
         sam_id = upsert_user(
             db, "Sam Okafor", "sam@example.com", "password123",
-            "employee", 28, 5, "2019-09-01",
+            "employee", 28, "2019-09-01",
             sickness_alert_days=5, sickness_alert_occurrences=2,
         )
 

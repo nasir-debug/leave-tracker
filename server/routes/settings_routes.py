@@ -25,7 +25,6 @@ def update_settings():
 
     for key in (
         "default_holiday_allowance_days",
-        "default_carry_over_days",
         "sickness_alert_days",
         "sickness_alert_occurrences",
     ):

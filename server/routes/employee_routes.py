@@ -15,7 +15,6 @@ def _validate_employee_payload(data, require_password):
     role = data.get("role", "employee")
     start_date = data.get("start_date")
     holiday_allowance_days = data.get("holiday_allowance_days", 25)
-    carry_over_days = data.get("carry_over_days", 0)
 
     if not name:
         errors.append("name is required")
@@ -31,10 +30,6 @@ def _validate_employee_payload(data, require_password):
             errors.append("holiday_allowance_days must be >= 0")
     except (TypeError, ValueError):
         errors.append("holiday_allowance_days must be a number")
-    try:
-        carry_over_days = float(carry_over_days)
-    except (TypeError, ValueError):
-        errors.append("carry_over_days must be a number")
     if require_password and not data.get("password"):
         errors.append("password is required")
 
@@ -44,7 +39,6 @@ def _validate_employee_payload(data, require_password):
         "role": role,
         "start_date": start_date,
         "holiday_allowance_days": holiday_allowance_days,
-        "carry_over_days": carry_over_days,
         "sickness_alert_days": data.get("sickness_alert_days"),
         "sickness_alert_occurrences": data.get("sickness_alert_occurrences"),
     }
@@ -95,16 +89,15 @@ def create_employee():
     new_id = insert_returning_id(
         db,
         """INSERT INTO users
-           (name, email, password_hash, role, holiday_allowance_days, carry_over_days,
+           (name, email, password_hash, role, holiday_allowance_days,
             sickness_alert_days, sickness_alert_occurrences, start_date, active)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)""",
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)""",
         (
             clean["name"],
             clean["email"],
             hash_password(data.get("password")),
             clean["role"],
             clean["holiday_allowance_days"],
-            clean["carry_over_days"],
             clean["sickness_alert_days"],
             clean["sickness_alert_occurrences"],
             clean["start_date"],
@@ -150,12 +143,6 @@ def update_employee(user_id):
             values.append(float(data["holiday_allowance_days"]))
         except (TypeError, ValueError):
             return jsonify({"error": "holiday_allowance_days must be a number"}), 400
-    if "carry_over_days" in data:
-        try:
-            fields.append("carry_over_days = ?")
-            values.append(float(data["carry_over_days"]))
-        except (TypeError, ValueError):
-            return jsonify({"error": "carry_over_days must be a number"}), 400
     if "sickness_alert_days" in data:
         fields.append("sickness_alert_days = ?")
         values.append(data["sickness_alert_days"])

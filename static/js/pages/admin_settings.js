@@ -15,9 +15,6 @@ export async function renderAdminSettings(container) {
         <div class="form-row"><label>Default holiday allowance (days/yr)</label>
           <input name="default_holiday_allowance_days" type="number" step="0.5" value="${settings.default_holiday_allowance_days}" />
         </div>
-        <div class="form-row"><label>Default carry-over (days)</label>
-          <input name="default_carry_over_days" type="number" step="0.5" value="${settings.default_carry_over_days}" />
-        </div>
         <div class="form-row"><label>Sickness alert threshold (days / 12mo)</label>
           <input name="sickness_alert_days" type="number" value="${settings.sickness_alert_days}" />
         </div>
@@ -38,7 +35,6 @@ export async function renderAdminSettings(container) {
     try {
       await api.updateSettings({
         default_holiday_allowance_days: fd.get("default_holiday_allowance_days"),
-        default_carry_over_days: fd.get("default_carry_over_days"),
         sickness_alert_days: fd.get("sickness_alert_days"),
         sickness_alert_occurrences: fd.get("sickness_alert_occurrences"),
       });

@@ -13,7 +13,6 @@ def serialize_user(user):
         "email": user["email"],
         "role": user["role"],
         "holiday_allowance_days": user["holiday_allowance_days"],
-        "carry_over_days": user["carry_over_days"],
         "sickness_alert_days": user["sickness_alert_days"],
         "sickness_alert_occurrences": user["sickness_alert_occurrences"],
         "start_date": user["start_date"],

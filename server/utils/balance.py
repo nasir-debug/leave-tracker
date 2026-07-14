@@ -26,14 +26,12 @@ def compute_holiday_balance(db, user):
     ).fetchone()["total"]
 
     allowance = user["holiday_allowance_days"]
-    carry_over = user["carry_over_days"]
-    remaining = allowance + carry_over - approved_used
+    remaining = allowance - approved_used
     projected_remaining = remaining - pending_total
 
     return {
         "year": int(year),
         "allowance_days": allowance,
-        "carry_over_days": carry_over,
         "approved_used_days": approved_used,
         "pending_days": pending_total,
         "remaining_days": remaining,

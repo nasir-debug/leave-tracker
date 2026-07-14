@@ -20,7 +20,7 @@ function employeeRowHtml(e) {
     <tr data-row="${e.id}">
       <td>${e.name}<br><span style="color:var(--text-muted); font-size:12px;">${e.email}</span></td>
       <td>${e.role}</td>
-      <td>${h.allowance_days} / ${h.carry_over_days} carry</td>
+      <td>${h.allowance_days} days/yr</td>
       <td>${h.remaining_days} left ${holidayBadge(e.balance)}</td>
       <td>${sicknessBadge(e.balance)}</td>
       <td><div class="actions-row">
@@ -46,9 +46,6 @@ function editFormHtml(e) {
         </div>
         <div class="form-row"><label>Holiday allowance (days/yr)</label>
           <input name="holiday_allowance_days" type="number" step="0.5" value="${e.holiday_allowance_days}" required />
-        </div>
-        <div class="form-row"><label>Carry-over days</label>
-          <input name="carry_over_days" type="number" step="0.5" value="${e.carry_over_days}" required />
         </div>
         <div class="form-row"><label>Sickness alert: days (blank = org default)</label>
           <input name="sickness_alert_days" type="number" value="${e.sickness_alert_days ?? ""}" />
@@ -81,7 +78,7 @@ export async function renderAdminEmployees(container) {
     <div class="card">
       <h3>All employees</h3>
       <table>
-        <thead><tr><th>Name</th><th>Role</th><th>Allowance/Carry</th><th>Holiday</th><th>Sickness</th><th></th></tr></thead>
+        <thead><tr><th>Name</th><th>Role</th><th>Allowance</th><th>Holiday</th><th>Sickness</th><th></th></tr></thead>
         <tbody id="employee-rows"></tbody>
       </table>
     </div>
@@ -119,7 +116,6 @@ export async function renderAdminEmployees(container) {
           email: fd.get("email"),
           role: fd.get("role"),
           holiday_allowance_days: fd.get("holiday_allowance_days"),
-          carry_over_days: fd.get("carry_over_days"),
           sickness_alert_days: fd.get("sickness_alert_days") || null,
           sickness_alert_occurrences: fd.get("sickness_alert_occurrences") || null,
         };
@@ -154,7 +150,6 @@ export async function renderAdminEmployees(container) {
         </div>
         <div class="form-row"><label>Start date</label><input name="start_date" type="date" required /></div>
         <div class="form-row"><label>Holiday allowance (days/yr)</label><input name="holiday_allowance_days" type="number" step="0.5" value="25" required /></div>
-        <div class="form-row"><label>Carry-over days</label><input name="carry_over_days" type="number" step="0.5" value="0" required /></div>
       </div>
       <div id="create-error"></div>
       <button class="btn" type="submit">Create employee</button>
@@ -173,7 +168,6 @@ export async function renderAdminEmployees(container) {
         role: fd.get("role"),
         start_date: fd.get("start_date"),
         holiday_allowance_days: fd.get("holiday_allowance_days"),
-        carry_over_days: fd.get("carry_over_days"),
       });
       renderAdminEmployees(container);
     } catch (err) {
