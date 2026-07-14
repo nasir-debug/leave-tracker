@@ -91,20 +91,24 @@ def bootstrap_admin():
         existing = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
         if existing:
             return
-        conn.execute(
-            """INSERT INTO users
-               (name, email, password_hash, role, holiday_allowance_days, carry_over_days,
-                start_date, active)
-               VALUES (?, ?, ?, 'admin', ?, ?, ?, 1)""",
-            (
-                config.BOOTSTRAP_ADMIN_NAME,
-                config.BOOTSTRAP_ADMIN_EMAIL.strip().lower(),
-                hash_password(config.BOOTSTRAP_ADMIN_PASSWORD),
-                config.DEFAULT_HOLIDAY_ALLOWANCE_DAYS,
-                config.DEFAULT_CARRY_OVER_DAYS,
-                date.today().isoformat(),
-            ),
-        )
-        conn.commit()
+        try:
+            conn.execute(
+                """INSERT INTO users
+                   (name, email, password_hash, role, holiday_allowance_days, carry_over_days,
+                    start_date, active)
+                   VALUES (?, ?, ?, 'admin', ?, ?, ?, 1)""",
+                (
+                    config.BOOTSTRAP_ADMIN_NAME,
+                    config.BOOTSTRAP_ADMIN_EMAIL.strip().lower(),
+                    hash_password(config.BOOTSTRAP_ADMIN_PASSWORD),
+                    config.DEFAULT_HOLIDAY_ALLOWANCE_DAYS,
+                    config.DEFAULT_CARRY_OVER_DAYS,
+                    date.today().isoformat(),
+                ),
+            )
+            conn.commit()
+        except sqlite3.IntegrityError:
+            # Another worker process won the race and already created it.
+            pass
     finally:
         conn.close()
