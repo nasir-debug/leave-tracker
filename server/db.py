@@ -1,9 +1,15 @@
+import json
 import os
 import sqlite3
+import urllib.request
 
 from flask import g
 
 from . import config
+
+GOV_UK_BANK_HOLIDAYS_URL = "https://www.gov.uk/bank-holidays.json"
+BANK_HOLIDAY_DIVISION = "england-and-wales"
+BANK_HOLIDAY_NOTE_PREFIX = "UK Bank Holiday:"
 
 SQLITE_SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
@@ -229,5 +235,71 @@ def bootstrap_admin():
                 conn.commit()
             except sqlite3.IntegrityError:
                 pass
+    finally:
+        conn.close()
+
+
+def _fetch_uk_bank_holidays(years):
+    """Returns {year: [(iso_date, title), ...]} from gov.uk's official bank
+    holidays feed, for England & Wales. Returns {} on any failure (network
+    down, gov.uk unreachable, unexpected response shape) - this is a
+    nice-to-have sync, never something that should block app startup."""
+    try:
+        with urllib.request.urlopen(GOV_UK_BANK_HOLIDAYS_URL, timeout=5) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        events = data[BANK_HOLIDAY_DIVISION]["events"]
+    except Exception as e:
+        print(f"[leave-tracker] bank holiday fetch failed: {e}", flush=True)
+        return {}
+
+    by_year = {y: [] for y in years}
+    for ev in events:
+        ev_date = ev.get("date", "")
+        if ev_date[:4].isdigit() and int(ev_date[:4]) in by_year:
+            by_year[int(ev_date[:4])].append((ev_date, ev.get("title", "Bank Holiday")))
+    return by_year
+
+
+def sync_bank_holidays():
+    """Idempotently creates approved holiday leave records for every active
+    employee for this year's and next year's UK (England & Wales) bank
+    holidays. Skips any date before the employee's start_date, so joining
+    mid-year doesn't retroactively dock days from before they were employed.
+    Safe to call on every startup - already-synced dates are skipped."""
+    from datetime import date
+
+    today_year = date.today().year
+    holidays_by_year = _fetch_uk_bank_holidays([today_year, today_year + 1])
+    if not any(holidays_by_year.values()):
+        return
+
+    conn = _connect()
+    try:
+        users = conn.execute("SELECT * FROM users WHERE active = 1").fetchall()
+        added = 0
+        for holidays in holidays_by_year.values():
+            for user in users:
+                for holiday_date, title in holidays:
+                    if holiday_date < user["start_date"]:
+                        continue
+                    existing = conn.execute(
+                        "SELECT id FROM leave_requests WHERE user_id = ? AND start_date = ? AND notes LIKE ?",
+                        (user["id"], holiday_date, f"{BANK_HOLIDAY_NOTE_PREFIX}%"),
+                    ).fetchone()
+                    if existing:
+                        continue
+                    conn.execute(
+                        """INSERT INTO leave_requests
+                           (user_id, type, start_date, end_date, days, status, notes, decided_at)
+                           VALUES (?, 'holiday', ?, ?, 1, 'approved', ?, ?)""",
+                        (user["id"], holiday_date, holiday_date, f"{BANK_HOLIDAY_NOTE_PREFIX} {title}", holiday_date),
+                    )
+                    added += 1
+        conn.commit()
+        if added:
+            print(f"[leave-tracker] synced {added} UK bank holiday leave record(s)", flush=True)
+    except Exception as e:
+        print(f"[leave-tracker] bank holiday sync failed: {e}", flush=True)
+        conn.rollback()
     finally:
         conn.close()
