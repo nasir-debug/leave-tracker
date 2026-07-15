@@ -9,8 +9,8 @@ function statusBadge(status) {
   return `<span class="badge pending">Pending</span>`;
 }
 
-async function renderLeaveTable(container) {
-  const { leave } = await api.listLeave();
+async function renderLeaveTable(container, userId) {
+  const { leave } = await api.listLeave({ user_id: userId });
   if (leave.length === 0) {
     container.innerHTML = `<div class="empty-state">No leave booked yet.</div>`;
     return;
@@ -68,5 +68,5 @@ export async function renderDashboard(container) {
     onCreated: () => renderDashboard(container),
   });
 
-  await renderLeaveTable(container.querySelector("#leave-table"));
+  await renderLeaveTable(container.querySelector("#leave-table"), user.id);
 }
