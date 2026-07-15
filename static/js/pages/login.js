@@ -25,6 +25,18 @@ export function renderLogin(container) {
   const form = container.querySelector("#login-form");
   const errorEl = container.querySelector("#login-error");
 
+  // Belt-and-braces: some browser/extension combinations (password manager
+  // autofill dropdowns in particular) swallow the Enter keypress before it
+  // triggers the form's native submit. Force it explicitly.
+  form.querySelectorAll("input").forEach((input) => {
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        form.requestSubmit();
+      }
+    });
+  });
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     errorEl.innerHTML = "";
