@@ -44,6 +44,18 @@ export function renderLeaveForm(container, { employees = null, onCreated } = {})
 
   const form = container.querySelector("#leave-form");
   const errorEl = container.querySelector("#leave-form-error");
+  const startInput = form.querySelector('input[name="start_date"]');
+  const endInput = form.querySelector('input[name="end_date"]');
+
+  startInput.addEventListener("change", () => {
+    if (!startInput.value) return;
+    endInput.min = startInput.value;
+    // Keep the end-date picker's default month in sync with the start date
+    // instead of always opening on today's month.
+    if (!endInput.value || endInput.value < startInput.value) {
+      endInput.value = startInput.value;
+    }
+  });
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
