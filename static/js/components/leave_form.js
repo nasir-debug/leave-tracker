@@ -47,7 +47,7 @@ export function renderLeaveForm(container, { employees = null, onCreated } = {})
   const startInput = form.querySelector('input[name="start_date"]');
   const endInput = form.querySelector('input[name="end_date"]');
 
-  startInput.addEventListener("change", () => {
+  function syncEndDate() {
     if (!startInput.value) return;
     endInput.min = startInput.value;
     // Keep the end-date picker's default month in sync with the start date
@@ -55,7 +55,16 @@ export function renderLeaveForm(container, { employees = null, onCreated } = {})
     if (!endInput.value || endInput.value < startInput.value) {
       endInput.value = startInput.value;
     }
-  });
+  }
+
+  // "input" fires as soon as the value changes (including via the native
+  // picker widget); "change" alone can lag until blur, which is too late if
+  // the very next action is clicking straight into the end-date field.
+  startInput.addEventListener("input", syncEndDate);
+  startInput.addEventListener("change", syncEndDate);
+  // Belt-and-braces: catch it the moment end date is focused too, right
+  // before its picker opens.
+  endInput.addEventListener("focus", syncEndDate);
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
