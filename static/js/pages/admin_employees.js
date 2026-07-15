@@ -76,7 +76,13 @@ function leaveRowsHtml(leaveList) {
     .join("");
 }
 
-async function renderEmployeeLeaveHistory(cell, employeeId, employeeName, initialFilter = "") {
+async function renderEmployeeLeaveHistory(
+  cell,
+  employeeId,
+  employeeName,
+  initialTypeFilter = "",
+  initialYearFilter = null
+) {
   const { leave: allLeave } = await api.listLeave({ user_id: employeeId });
 
   if (allLeave.length === 0) {
@@ -84,10 +90,20 @@ async function renderEmployeeLeaveHistory(cell, employeeId, employeeName, initia
     return;
   }
 
+  const currentYear = String(new Date().getFullYear());
+  const years = Array.from(new Set([currentYear, ...allLeave.map((l) => l.start_date.slice(0, 4))])).sort(
+    (a, b) => b.localeCompare(a)
+  );
+  const yearFilterDefault = initialYearFilter ?? currentYear;
+
   cell.innerHTML = `
     <div class="actions-row" style="justify-content:space-between; align-items:center; margin-bottom:10px;">
       <h4 style="margin:0;">${employeeName}'s leave</h4>
-      <div class="form-row" style="margin:0;">
+      <div class="actions-row">
+        <select id="leave-year-filter">
+          <option value="">All years</option>
+          ${years.map((y) => `<option value="${y}">${y}</option>`).join("")}
+        </select>
         <select id="leave-type-filter">
           <option value="">All types</option>
           <option value="holiday">Holiday only</option>
@@ -100,14 +116,21 @@ async function renderEmployeeLeaveHistory(cell, employeeId, employeeName, initia
 
   const wrap = cell.querySelector("#leave-table-wrap");
   const filterSelect = cell.querySelector("#leave-type-filter");
-  filterSelect.value = initialFilter;
+  const yearSelect = cell.querySelector("#leave-year-filter");
+  filterSelect.value = initialTypeFilter;
+  yearSelect.value = yearFilterDefault;
 
   function renderTable() {
     const typeFilter = filterSelect.value;
-    const filtered = typeFilter ? allLeave.filter((l) => l.type === typeFilter) : allLeave;
+    const yearFilter = yearSelect.value;
+    const filtered = allLeave.filter(
+      (l) => (!typeFilter || l.type === typeFilter) && (!yearFilter || l.start_date.startsWith(yearFilter))
+    );
 
     if (filtered.length === 0) {
-      wrap.innerHTML = `<div class="empty-state">No ${typeFilter || ""} leave matches this filter.</div>`;
+      wrap.innerHTML = `<div class="empty-state">No ${typeFilter || ""} leave matches this filter${
+        yearFilter ? ` for ${yearFilter}` : ""
+      }.</div>`;
       return;
     }
 
@@ -143,7 +166,7 @@ async function renderEmployeeLeaveHistory(cell, employeeId, employeeName, initia
               end_date: fd.get("end_date"),
               notes: fd.get("notes"),
             });
-            await renderEmployeeLeaveHistory(cell, employeeId, employeeName, filterSelect.value);
+            await renderEmployeeLeaveHistory(cell, employeeId, employeeName, filterSelect.value, yearSelect.value);
           } catch (err) {
             alert(err.message);
           }
@@ -155,12 +178,13 @@ async function renderEmployeeLeaveHistory(cell, employeeId, employeeName, initia
       btn.addEventListener("click", async () => {
         if (!confirm("Delete this leave record? This cannot be undone.")) return;
         await api.cancelLeave(btn.dataset.deleteLeave);
-        await renderEmployeeLeaveHistory(cell, employeeId, employeeName, filterSelect.value);
+        await renderEmployeeLeaveHistory(cell, employeeId, employeeName, filterSelect.value, yearSelect.value);
       });
     });
   }
 
   filterSelect.addEventListener("change", renderTable);
+  yearSelect.addEventListener("change", renderTable);
   renderTable();
 }
 
