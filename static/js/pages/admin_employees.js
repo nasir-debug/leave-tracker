@@ -56,78 +56,112 @@ function leaveEditFormHtml(l) {
   `;
 }
 
-async function renderEmployeeLeaveHistory(cell, employeeId, employeeName) {
-  const { leave } = await api.listLeave({ user_id: employeeId });
-  if (leave.length === 0) {
+function leaveRowsHtml(leaveList) {
+  return leaveList
+    .map(
+      (l) => `
+    <tr data-leave-row="${l.id}">
+      <td>${l.type === "holiday" ? "Holiday" : "Sickness"}</td>
+      <td>${l.start_date} &rarr; ${l.end_date}</td>
+      <td>${l.days}</td>
+      <td>${leaveStatusBadge(l.status)}</td>
+      <td>${l.notes || ""}</td>
+      <td><div class="actions-row">
+        <button class="btn secondary small" data-edit-leave="${l.id}">Edit</button>
+        <button class="btn danger small" data-delete-leave="${l.id}">Delete</button>
+      </div></td>
+    </tr>
+    <tr class="leave-edit-row" id="leave-edit-row-${l.id}" style="display:none;"><td colspan="6"></td></tr>`
+    )
+    .join("");
+}
+
+async function renderEmployeeLeaveHistory(cell, employeeId, employeeName, initialFilter = "") {
+  const { leave: allLeave } = await api.listLeave({ user_id: employeeId });
+
+  if (allLeave.length === 0) {
     cell.innerHTML = `<div class="empty-state">${employeeName} has no leave on record.</div>`;
     return;
   }
+
   cell.innerHTML = `
-    <h4 style="margin:4px 0 10px;">${employeeName}'s leave</h4>
-    <table>
-      <thead><tr><th>Type</th><th>Dates</th><th>Days</th><th>Status</th><th>Notes</th><th></th></tr></thead>
-      <tbody>
-        ${leave
-          .map(
-            (l) => `
-          <tr data-leave-row="${l.id}">
-            <td>${l.type === "holiday" ? "Holiday" : "Sickness"}</td>
-            <td>${l.start_date} &rarr; ${l.end_date}</td>
-            <td>${l.days}</td>
-            <td>${leaveStatusBadge(l.status)}</td>
-            <td>${l.notes || ""}</td>
-            <td><div class="actions-row">
-              <button class="btn secondary small" data-edit-leave="${l.id}">Edit</button>
-              <button class="btn danger small" data-delete-leave="${l.id}">Delete</button>
-            </div></td>
-          </tr>
-          <tr class="leave-edit-row" id="leave-edit-row-${l.id}" style="display:none;"><td colspan="6"></td></tr>`
-          )
-          .join("")}
-      </tbody>
-    </table>
+    <div class="actions-row" style="justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <h4 style="margin:0;">${employeeName}'s leave</h4>
+      <div class="form-row" style="margin:0;">
+        <select id="leave-type-filter">
+          <option value="">All types</option>
+          <option value="holiday">Holiday only</option>
+          <option value="sickness">Sickness only</option>
+        </select>
+      </div>
+    </div>
+    <div id="leave-table-wrap"></div>
   `;
 
-  cell.querySelectorAll("[data-edit-leave]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const id = btn.dataset.editLeave;
-      const l = leave.find((x) => String(x.id) === id);
-      const row = cell.querySelector(`#leave-edit-row-${id}`);
-      const editCell = row.querySelector("td");
-      const showing = row.style.display !== "none";
-      cell.querySelectorAll(".leave-edit-row").forEach((r) => (r.style.display = "none"));
-      if (showing) return;
-      editCell.innerHTML = leaveEditFormHtml(l);
-      row.style.display = "";
+  const wrap = cell.querySelector("#leave-table-wrap");
+  const filterSelect = cell.querySelector("#leave-type-filter");
+  filterSelect.value = initialFilter;
 
-      editCell.querySelector("[data-cancel-leave-edit]").addEventListener("click", () => {
-        row.style.display = "none";
-      });
+  function renderTable() {
+    const typeFilter = filterSelect.value;
+    const filtered = typeFilter ? allLeave.filter((l) => l.type === typeFilter) : allLeave;
 
-      editCell.querySelector("form").addEventListener("submit", async (ev) => {
-        ev.preventDefault();
-        const fd = new FormData(ev.target);
-        try {
-          await api.updateLeave(id, {
-            start_date: fd.get("start_date"),
-            end_date: fd.get("end_date"),
-            notes: fd.get("notes"),
-          });
-          await renderEmployeeLeaveHistory(cell, employeeId, employeeName);
-        } catch (err) {
-          alert(err.message);
-        }
+    if (filtered.length === 0) {
+      wrap.innerHTML = `<div class="empty-state">No ${typeFilter || ""} leave matches this filter.</div>`;
+      return;
+    }
+
+    wrap.innerHTML = `
+      <table>
+        <thead><tr><th>Type</th><th>Dates</th><th>Days</th><th>Status</th><th>Notes</th><th></th></tr></thead>
+        <tbody>${leaveRowsHtml(filtered)}</tbody>
+      </table>
+    `;
+
+    wrap.querySelectorAll("[data-edit-leave]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.editLeave;
+        const l = allLeave.find((x) => String(x.id) === id);
+        const row = wrap.querySelector(`#leave-edit-row-${id}`);
+        const editCell = row.querySelector("td");
+        const showing = row.style.display !== "none";
+        wrap.querySelectorAll(".leave-edit-row").forEach((r) => (r.style.display = "none"));
+        if (showing) return;
+        editCell.innerHTML = leaveEditFormHtml(l);
+        row.style.display = "";
+
+        editCell.querySelector("[data-cancel-leave-edit]").addEventListener("click", () => {
+          row.style.display = "none";
+        });
+
+        editCell.querySelector("form").addEventListener("submit", async (ev) => {
+          ev.preventDefault();
+          const fd = new FormData(ev.target);
+          try {
+            await api.updateLeave(id, {
+              start_date: fd.get("start_date"),
+              end_date: fd.get("end_date"),
+              notes: fd.get("notes"),
+            });
+            await renderEmployeeLeaveHistory(cell, employeeId, employeeName, filterSelect.value);
+          } catch (err) {
+            alert(err.message);
+          }
+        });
       });
     });
-  });
 
-  cell.querySelectorAll("[data-delete-leave]").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      if (!confirm("Delete this leave record? This cannot be undone.")) return;
-      await api.cancelLeave(btn.dataset.deleteLeave);
-      await renderEmployeeLeaveHistory(cell, employeeId, employeeName);
+    wrap.querySelectorAll("[data-delete-leave]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!confirm("Delete this leave record? This cannot be undone.")) return;
+        await api.cancelLeave(btn.dataset.deleteLeave);
+        await renderEmployeeLeaveHistory(cell, employeeId, employeeName, filterSelect.value);
+      });
     });
-  });
+  }
+
+  filterSelect.addEventListener("change", renderTable);
+  renderTable();
 }
 
 function editFormHtml(e) {
