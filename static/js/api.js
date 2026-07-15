@@ -54,6 +54,7 @@ export const api = {
     return request("GET", `/api/leave${qs ? "?" + qs : ""}`);
   },
   createLeave: (payload) => request("POST", "/api/leave", payload),
+  updateLeave: (id, payload) => request("PATCH", `/api/leave/${id}`, payload),
   decideLeave: (id, status) => request("PATCH", `/api/leave/${id}/status`, { status }),
   cancelLeave: (id) => request("DELETE", `/api/leave/${id}`),
 

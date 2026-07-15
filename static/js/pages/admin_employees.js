@@ -24,12 +24,110 @@ function employeeRowHtml(e) {
       <td>${h.remaining_days} left ${holidayBadge(e.balance)}</td>
       <td>${sicknessBadge(e.balance)}</td>
       <td><div class="actions-row">
+        <button class="btn secondary small" data-leave="${e.id}">Leave</button>
         <button class="btn secondary small" data-edit="${e.id}">Edit</button>
         <button class="btn danger small" data-deactivate="${e.id}">Deactivate</button>
       </div></td>
     </tr>
     <tr class="edit-row" id="edit-row-${e.id}" style="display:none;"><td colspan="6"></td></tr>
+    <tr class="leave-history-row" id="leave-history-row-${e.id}" style="display:none;"><td colspan="6"></td></tr>
   `;
+}
+
+function leaveStatusBadge(status) {
+  if (status === "approved") return `<span class="badge ok">Approved</span>`;
+  if (status === "rejected") return `<span class="badge danger">Rejected</span>`;
+  return `<span class="badge pending">Pending</span>`;
+}
+
+function leaveEditFormHtml(l) {
+  return `
+    <form class="edit-leave-form" data-leave-id="${l.id}">
+      <div class="form-grid">
+        <div class="form-row"><label>Start date</label><input name="start_date" type="date" value="${l.start_date}" required /></div>
+        <div class="form-row"><label>End date</label><input name="end_date" type="date" value="${l.end_date}" required /></div>
+      </div>
+      <div class="form-row"><label>Notes</label><input name="notes" value="${l.notes || ""}" /></div>
+      <div class="actions-row">
+        <button class="btn small" type="submit">Save</button>
+        <button class="btn secondary small" type="button" data-cancel-leave-edit>Cancel</button>
+      </div>
+    </form>
+  `;
+}
+
+async function renderEmployeeLeaveHistory(cell, employeeId, employeeName) {
+  const { leave } = await api.listLeave({ user_id: employeeId });
+  if (leave.length === 0) {
+    cell.innerHTML = `<div class="empty-state">${employeeName} has no leave on record.</div>`;
+    return;
+  }
+  cell.innerHTML = `
+    <h4 style="margin:4px 0 10px;">${employeeName}'s leave</h4>
+    <table>
+      <thead><tr><th>Type</th><th>Dates</th><th>Days</th><th>Status</th><th>Notes</th><th></th></tr></thead>
+      <tbody>
+        ${leave
+          .map(
+            (l) => `
+          <tr data-leave-row="${l.id}">
+            <td>${l.type === "holiday" ? "Holiday" : "Sickness"}</td>
+            <td>${l.start_date} &rarr; ${l.end_date}</td>
+            <td>${l.days}</td>
+            <td>${leaveStatusBadge(l.status)}</td>
+            <td>${l.notes || ""}</td>
+            <td><div class="actions-row">
+              <button class="btn secondary small" data-edit-leave="${l.id}">Edit</button>
+              <button class="btn danger small" data-delete-leave="${l.id}">Delete</button>
+            </div></td>
+          </tr>
+          <tr class="leave-edit-row" id="leave-edit-row-${l.id}" style="display:none;"><td colspan="6"></td></tr>`
+          )
+          .join("")}
+      </tbody>
+    </table>
+  `;
+
+  cell.querySelectorAll("[data-edit-leave]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.editLeave;
+      const l = leave.find((x) => String(x.id) === id);
+      const row = cell.querySelector(`#leave-edit-row-${id}`);
+      const editCell = row.querySelector("td");
+      const showing = row.style.display !== "none";
+      cell.querySelectorAll(".leave-edit-row").forEach((r) => (r.style.display = "none"));
+      if (showing) return;
+      editCell.innerHTML = leaveEditFormHtml(l);
+      row.style.display = "";
+
+      editCell.querySelector("[data-cancel-leave-edit]").addEventListener("click", () => {
+        row.style.display = "none";
+      });
+
+      editCell.querySelector("form").addEventListener("submit", async (ev) => {
+        ev.preventDefault();
+        const fd = new FormData(ev.target);
+        try {
+          await api.updateLeave(id, {
+            start_date: fd.get("start_date"),
+            end_date: fd.get("end_date"),
+            notes: fd.get("notes"),
+          });
+          await renderEmployeeLeaveHistory(cell, employeeId, employeeName);
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+    });
+  });
+
+  cell.querySelectorAll("[data-delete-leave]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!confirm("Delete this leave record? This cannot be undone.")) return;
+      await api.cancelLeave(btn.dataset.deleteLeave);
+      await renderEmployeeLeaveHistory(cell, employeeId, employeeName);
+    });
+  });
 }
 
 function editFormHtml(e) {
@@ -92,6 +190,22 @@ export async function renderAdminEmployees(container) {
   const tbody = container.querySelector("#employee-rows");
   tbody.innerHTML = employees.map(employeeRowHtml).join("");
 
+  tbody.querySelectorAll("[data-leave]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.leave;
+      const emp = employees.find((e) => String(e.id) === id);
+      const row = document.getElementById(`leave-history-row-${id}`);
+      const cell = row.querySelector("td");
+      const showing = row.style.display !== "none";
+      tbody.querySelectorAll(".leave-history-row").forEach((r) => (r.style.display = "none"));
+      tbody.querySelectorAll(".edit-row").forEach((r) => (r.style.display = "none"));
+      if (showing) return;
+      row.style.display = "";
+      cell.innerHTML = `<div class="empty-state">Loading&hellip;</div>`;
+      await renderEmployeeLeaveHistory(cell, id, emp.name);
+    });
+  });
+
   tbody.querySelectorAll("[data-edit]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const id = btn.dataset.edit;
@@ -100,6 +214,7 @@ export async function renderAdminEmployees(container) {
       const cell = row.querySelector("td");
       const showing = row.style.display !== "none";
       tbody.querySelectorAll(".edit-row").forEach((r) => (r.style.display = "none"));
+      tbody.querySelectorAll(".leave-history-row").forEach((r) => (r.style.display = "none"));
       if (showing) return;
       cell.innerHTML = editFormHtml(emp);
       row.style.display = "";

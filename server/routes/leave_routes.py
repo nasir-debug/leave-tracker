@@ -127,6 +127,52 @@ def create_leave():
     return jsonify({"leave": result}), 201
 
 
+@bp.patch("/<int:leave_id>")
+@require_auth
+@require_role("admin")
+def update_leave(leave_id):
+    """Lets an admin correct a leave record's dates/notes, regardless of its
+    current status (e.g. fixing a mistake in an already-approved entry)."""
+    db = get_db()
+    row = db.execute("SELECT * FROM leave_requests WHERE id = ?", (leave_id,)).fetchone()
+    if not row:
+        return jsonify({"error": "Not found"}), 404
+
+    data = request.get_json(silent=True) or {}
+    start_date = data.get("start_date", row["start_date"])
+    end_date = data.get("end_date", row["end_date"])
+    notes = data.get("notes", row["notes"])
+    if isinstance(notes, str):
+        notes = notes.strip() or None
+
+    try:
+        d0 = parse_date(start_date)
+        d1 = parse_date(end_date)
+    except ValueError:
+        return jsonify({"error": "dates must be in YYYY-MM-DD format"}), 400
+    if d1 < d0:
+        return jsonify({"error": "end_date must not be before start_date"}), 400
+    if d0.year != d1.year:
+        return jsonify({"error": "requests spanning a calendar year boundary must be split into two"}), 400
+
+    days = count_business_days(start_date, end_date)
+    if days == 0:
+        return jsonify({"error": "the selected range contains no weekdays"}), 400
+
+    db.execute(
+        "UPDATE leave_requests SET start_date = ?, end_date = ?, days = ?, notes = ? WHERE id = ?",
+        (start_date, end_date, days, notes, leave_id),
+    )
+    db.commit()
+
+    row = db.execute(
+        """SELECT lr.*, u.name AS user_name FROM leave_requests lr
+           JOIN users u ON u.id = lr.user_id WHERE lr.id = ?""",
+        (leave_id,),
+    ).fetchone()
+    return jsonify({"leave": serialize_leave(row)})
+
+
 @bp.patch("/<int:leave_id>/status")
 @require_auth
 @require_role("admin")
